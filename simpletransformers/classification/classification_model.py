@@ -766,7 +766,7 @@ class ClassificationModel:
 
             print('st - calc preds argmax sliding')
             preds = [np.argmax(pred, axis=1)[0] for pred in preds]
-            print('st - preds argmax sliding'): print(preds)
+            print('st - preds argmax sliding'); print(preds)
 
             final_preds = []
             for pred_row in preds:
