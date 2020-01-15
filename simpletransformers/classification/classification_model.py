@@ -568,6 +568,12 @@ class ClassificationModel:
             print(f"Features loaded from cache at {cached_features_file}")
         else:
             print(f"Converting to features started. Cache is not used.")
+
+            print("st load_and_cache_examples - args"); print(args)
+            print("st load_and_cache_examples - output_mode"); print(output_mode)
+            print("st load_and_cache_examples - examples"); print(examples)
+
+
             features = convert_examples_to_features(
                 examples,
                 args["max_seq_length"],
@@ -592,20 +598,27 @@ class ClassificationModel:
                 flatten=not evaluate,
                 stride=args['stride']
             )
+            print('st load_and_cache_examples - features'); print(features)
 
             if not no_cache:
+                print('st load_and_cache_examples torch save')
                 torch.save(features, cached_features_file)
+                print('st load_and_cache_examples torch saved')
 
         if args['sliding_window'] and evaluate:
+            print('st load_and_cache_examples - sliding window')
             window_counts = [len(sample) for sample in features]
             features = [feature for feature_set in features for feature in feature_set]
+            print('st load_and_cache_examples - end sliding window')
 
         all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in features], dtype=torch.long)
 
         if output_mode == "classification":
+            print('st load_and_cache_examples - all_labels_id')
             all_label_ids = torch.tensor([f.label_id for f in features], dtype=torch.long)
+            print('st - load_and_cache_examples');  print(all_label_ids)
         elif output_mode == "regression":
             all_label_ids = torch.tensor([f.label_id for f in features], dtype=torch.float)
 
@@ -708,10 +721,15 @@ class ClassificationModel:
             print('st slidingwindow=True')
             eval_dataset, window_counts = self.load_and_cache_examples(eval_examples, evaluate=True, no_cache=True)
         else:
+            print('st start eval_dataset')
             eval_dataset = self.load_and_cache_examples(eval_examples, evaluate=True, multi_label=multi_label, no_cache=True)
         print('st eval_dataset'); print(eval_dataset)
 
+        print('st create eval_sampler')
         eval_sampler = SequentialSampler(eval_dataset)
+        print('st eval_sampler'); print(eval_sampler)
+
+        print('st eval_dataloader')
         eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args["eval_batch_size"])
 
         eval_loss = 0.0
@@ -719,6 +737,7 @@ class ClassificationModel:
         preds = None
         out_label_ids = None
 
+        print('st - starting tqdm(eval_dataloader,')
         for batch in tqdm(eval_dataloader, disable=args['silent']):
             print('st - batch'); print(batch)
             model.eval()
