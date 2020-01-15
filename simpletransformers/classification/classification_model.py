@@ -675,23 +675,38 @@ class ClassificationModel:
         """
 
         tokenizer = self.tokenizer
-        device = self.device
-        model = self.model
-        args = self.args
+        print('st - tokenizer'); print(tokenizer)
 
+        device = self.device
+        print('st- device'); print(device)
+
+        model = self.model
+        print('st- model'); print(model)
+
+        args = self.args
+        print('st args'); print(args)
+
+        print('st saving model to device')
         self._move_model_to_device()
+        print('st model saved to device')
 
         if multi_label:
+            print('st multilabel')
             eval_examples = [InputExample(i, text, None, [0 for i in range(self.num_labels)]) for i, text in enumerate(to_predict)]
         else:
             if isinstance(to_predict[0], list):
+                print('st else')
                 eval_examples = [InputExample(i, text[0], text[1], 0) for i, text in enumerate(to_predict)]
             else:
                 eval_examples = [InputExample(i, text, None, 0) for i, text in enumerate(to_predict)]
+        print('eval_examples'); print(eval_examples)
+
         if args['sliding_window']:
+            print('st slidingwindow=True')
             eval_dataset, window_counts = self.load_and_cache_examples(eval_examples, evaluate=True, no_cache=True)
         else:
             eval_dataset = self.load_and_cache_examples(eval_examples, evaluate=True, multi_label=multi_label, no_cache=True)
+        print('st eval_dataset'); print(eval_dataset)
 
         eval_sampler = SequentialSampler(eval_dataset)
         eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args["eval_batch_size"])
@@ -702,20 +717,31 @@ class ClassificationModel:
         out_label_ids = None
 
         for batch in tqdm(eval_dataloader, disable=args['silent']):
+            print('st - batch'); print(batch)
             model.eval()
             batch = tuple(t.to(device) for t in batch)
 
             with torch.no_grad():
+                print('st calculating inputs')
                 inputs = self._get_inputs_dict(batch)
+                print(inputs)
+
+                print('st - calculating outputs')
                 outputs = model(**inputs)
+                print(outputs)
+
                 tmp_eval_loss, logits = outputs[:2]
+
 
                 if multi_label:
                     logits = logits.sigmoid()
 
                 eval_loss += tmp_eval_loss.mean().item()
+                print('eval_loss'); print(eval_loss)
 
             nb_eval_steps += 1
+
+            print('logits'); print(logits)
 
             if preds is None:
                 preds = logits.detach().cpu().numpy()
@@ -732,12 +758,16 @@ class ClassificationModel:
             for n_windows in window_counts:
                 window_ranges.append([count, count + n_windows])
                 count += n_windows
-
+            print('st - preds sliding window')
             preds = [preds[window_range[0]: window_range[1]] for window_range in window_ranges]
+            print('st preds sliding'); print(preds)
 
             model_outputs = preds
 
+            print('st - calc preds argmax sliding')
             preds = [np.argmax(pred, axis=1)[0] for pred in preds]
+            print('st - preds argmax sliding'): print(preds)
+
             final_preds = []
             for pred_row in preds:
                 mode_pred, counts = mode(pred_row)
@@ -745,8 +775,12 @@ class ClassificationModel:
                     final_preds.append(args['tie_value'])
                 else:
                     final_preds.append(mode_pred[0])
+
+            print('st - calc final preds sliding')
             preds = np.array(final_preds)
+            print('st - final preds sliding'); print(preds)
         elif not multi_label and args['regression'] == True:
+            print('st - regression')
             preds = np.squeeze(preds)
             model_outputs = preds
         else:
@@ -758,8 +792,15 @@ class ClassificationModel:
                 else:
                     preds = [[self._threshold(pred, args['threshold']) for pred in example] for example in preds]
             else:
-                preds = np.argmax(preds, axis=1)
 
+                print('st - calc preds argmax')
+                preds = np.argmax(preds, axis=1)
+                print('st - preds argmax'); print('preds')
+
+        print('st - before return')
+        print(preds)
+        print(model_outputs)
+        print('st - right before return')
         return preds, model_outputs
 
     def _threshold(self, x, threshold):
