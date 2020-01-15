@@ -694,7 +694,10 @@ class ClassificationModel:
             print('st multilabel')
             eval_examples = [InputExample(i, text, None, [0 for i in range(self.num_labels)]) for i, text in enumerate(to_predict)]
         else:
-            if isinstance(to_predict[0], list):
+            print('st - to predict')
+            print(to_predict)
+            print(type(to_predict))
+            if 1==2:  #isinstance(to_predict[0], list):
                 print('st else')
                 eval_examples = [InputExample(i, text[0], text[1], 0) for i, text in enumerate(to_predict)]
             else:
