@@ -74,12 +74,17 @@ def convert_example_to_feature(
     mask_padding_with_zero=True,
     sep_token_extra=False
 ):
+    print('cu1 - example row'); print(example_row)
+    print('cu1 - from row')
     example, max_seq_length, tokenizer, output_mode, cls_token_at_end, cls_token, sep_token, cls_token_segment_id, pad_on_left, pad_token_segment_id, sep_token_extra, multi_label, stride = example_row
 
+    print('cu1 - example.text_a'); print(example.text_a)
     tokens_a = tokenizer.tokenize(example.text_a)
+    print('cu1 - end tokens_a')
 
     tokens_b = None
     if example.text_b:
+        print('cu1 - tokens b')
         tokens_b = tokenizer.tokenize(example.text_b)
         # Modifies `tokens_a` and `tokens_b` in place so that the total
         # length is less than the specified length.
@@ -88,9 +93,11 @@ def convert_example_to_feature(
         _truncate_seq_pair(tokens_a, tokens_b, max_seq_length - special_tokens_count)
     else:
         # Account for [CLS] and [SEP] with "- 2" and with "- 3" for RoBERTa.
+        print('cu1 - special tokens')
         special_tokens_count = 3 if sep_token_extra else 2
         if len(tokens_a) > max_seq_length - special_tokens_count:
             tokens_a = tokens_a[:(max_seq_length - special_tokens_count)]
+        print('cu1 - end special tokens a')
 
     # The convention in BERT is:
     # (a) For sequence pairs:
@@ -110,7 +117,10 @@ def convert_example_to_feature(
     # For classification tasks, the first vector (corresponding to [CLS]) is
     # used as as the "sentence vector". Note that this only makes sense because
     # the entire model is fine-tuned.
+
+    print('cu1 - tokens = tokens_a + [sep_token]')
     tokens = tokens_a + [sep_token]
+    print('cu1 - segment_ids = [sequence_a_segment_id] * len(tokens)')
     segment_ids = [sequence_a_segment_id] * len(tokens)
 
     if tokens_b:
@@ -124,7 +134,9 @@ def convert_example_to_feature(
         tokens = [cls_token] + tokens
         segment_ids = [cls_token_segment_id] + segment_ids
 
+    print('cu1 - input_ids')
     input_ids = tokenizer.convert_tokens_to_ids(tokens)
+    print(input_ids)
 
     # The mask has 1 for real tokens and 0 for padding tokens. Only real
     # tokens are attended to.
@@ -133,18 +145,21 @@ def convert_example_to_feature(
     # Zero-pad up to the sequence length.
     padding_length = max_seq_length - len(input_ids)
     if pad_on_left:
+        print('cu1 - if, padding start')
         input_ids = ([pad_token] * padding_length) + input_ids
         input_mask = ([0 if mask_padding_with_zero else 1] * padding_length) + input_mask
         segment_ids = ([pad_token_segment_id] * padding_length) + segment_ids
+        print('cu1 - if, padding end')
     else:
+        print('cu1 - else, padding start')
         input_ids = input_ids + ([pad_token] * padding_length)
         input_mask = input_mask + ([0 if mask_padding_with_zero else 1] * padding_length)
         segment_ids = segment_ids + ([pad_token_segment_id] * padding_length)
-
+        print('cu1 - else, padding end')
     assert len(input_ids) == max_seq_length
     assert len(input_mask) == max_seq_length
     assert len(segment_ids) == max_seq_length
-
+    print('asserts made')
     # if output_mode == "classification":
     #     label_id = label_map[example.label]
     # elif output_mode == "regression":
@@ -155,6 +170,7 @@ def convert_example_to_feature(
     if output_mode == 'regressioin':
         label_id = float(example.label)
 
+    print('cu1 - just before return')
     return InputFeatures(
         input_ids=input_ids,
         input_mask=input_mask,
@@ -293,8 +309,10 @@ def convert_examples_to_features(
             - True (XLNet/GPT pattern): A + [SEP] + B + [SEP] + [CLS]
         `cls_token_segment_id` define the segment id associated to the CLS token (0 for BERT, 2 for XLNet)
     """
-
+    print('cu - examples raw'); print(examples)
+    print('cu - examples start')
     examples = [(example, max_seq_length, tokenizer, output_mode, cls_token_at_end, cls_token, sep_token, cls_token_segment_id, pad_on_left, pad_token_segment_id, sep_token_extra, multi_label, stride) for example in examples]
+    print('cu - examples end'); print(examples)
 
     if use_multiprocessing:
         if sliding_window:
@@ -302,11 +320,15 @@ def convert_examples_to_features(
             with Pool(process_count) as p:
                 features = list(tqdm(p.imap(convert_example_to_feature_sliding_window, examples, chunksize=500), total=len(examples), disable=silent))
             if flatten:
+                print('cu -flatten start')
                 features = [feature for feature_set in features for feature in feature_set]
+                print('cu -flatten end')
             print(f'{len(features)} features created from {len(examples)} samples.')
         else:
+            print('cu - features')
             with Pool(process_count) as p:
                 features = list(tqdm(p.imap(convert_example_to_feature, examples, chunksize=500), total=len(examples), disable=silent))
+                print('cu -features'); print(features)
     else:
         if sliding_window:
             print('sliding_window enabled')
@@ -315,7 +337,9 @@ def convert_examples_to_features(
                 features = [feature for feature_set in features for feature in feature_set]
             print(f'{len(features)} features created from {len(examples)} samples.')
         else:
+            print('cu - begin convert_example_to_feature')
             features = [convert_example_to_feature(example) for example in tqdm(examples, disable=silent)]
+            print('cu - end convert_example_to_feature')
 
     return features
 

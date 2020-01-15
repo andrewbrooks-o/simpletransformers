@@ -573,7 +573,6 @@ class ClassificationModel:
             print("st load_and_cache_examples - output_mode"); print(output_mode)
             print("st load_and_cache_examples - examples"); print(examples)
 
-
             features = convert_examples_to_features(
                 examples,
                 args["max_seq_length"],
