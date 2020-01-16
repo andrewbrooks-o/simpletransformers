@@ -62,6 +62,7 @@ class InputFeatures(object):
         self.input_mask = input_mask
         self.segment_ids = segment_ids
         self.label_id = label_id
+        print('st if - call to InputFeatures __init__ made')
 
 
 def convert_example_to_feature(
@@ -171,12 +172,20 @@ def convert_example_to_feature(
         label_id = float(example.label)
 
     print('cu1 - just before return')
-    return InputFeatures(
+
+    ajb_input_features = InputFeatures(
         input_ids=input_ids,
         input_mask=input_mask,
         segment_ids=segment_ids,
         label_id=example.label
     )
+    print('cu1 - 4 lines below: input_ids, input_mask, segment_ids, example.label')
+    print(input_ids)
+    print(input_mask)
+    print(segment_ids)
+    print(example.label)
+    print('ajb_input_features'); print(ajb_input_features)
+    return ajb_input_features
 
 
 def convert_example_to_feature_sliding_window(
@@ -325,10 +334,10 @@ def convert_examples_to_features(
                 print('cu -flatten end')
             print(f'{len(features)} features created from {len(examples)} samples.')
         else:
-            print('cu - features')
+            print('cu - features begin p.imap(convert_example_to_feature')
             with Pool(process_count) as p:
                 features = list(tqdm(p.imap(convert_example_to_feature, examples, chunksize=500), total=len(examples), disable=silent))
-                print('cu -features'); print(features)
+                print('cu - features end p.imap(convert_example_to_feature'); print(features)
     else:
         if sliding_window:
             print('sliding_window enabled')
@@ -341,6 +350,8 @@ def convert_examples_to_features(
             features = [convert_example_to_feature(example) for example in tqdm(examples, disable=silent)]
             print('cu - end convert_example_to_feature')
 
+    print('cu - about to return')
+    print(features)
     return features
 
 
